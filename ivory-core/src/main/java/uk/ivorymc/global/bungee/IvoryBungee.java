@@ -43,6 +43,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         );
         playerChatLogs = new HashMap<>();
         playerDataMap = new HashMap<>();
+        replyMap = new HashMap<>();
 
         register();
     }
@@ -55,6 +56,13 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
             this.audiences.close();
             this.audiences = null;
         }
+    }
+
+    @Override
+    public @NotNull BungeeAudiences adventure()
+    {
+        if (this.audiences != null) { return this.audiences; }
+        throw new IllegalStateException("Audiences not initialized (plugin is disabled).");
     }
 
     private void register()
@@ -81,13 +89,6 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         {
             getProxy().getPluginManager().registerCommand(this, command);
         }
-    }
-
-    @Override
-    public @NotNull BungeeAudiences adventure()
-    {
-        if (this.audiences != null) { return this.audiences; }
-        throw new IllegalStateException("Audiences not initialized (plugin is disabled).");
     }
 
     public void async(Runnable runnable)
