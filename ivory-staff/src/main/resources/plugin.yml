@@ -1,0 +1,5 @@
+name: IvoryStaff
+main: uk.ivorymc.staff.Staff
+version: ${version}
+api-version: ${versions.plugin-api}
+author: Wolveh

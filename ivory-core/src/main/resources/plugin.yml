@@ -1,0 +1,5 @@
+name: IvoryMC
+main: uk.ivorymc.core.Core
+author: Wolveh
+version: ${version}
+api-version: ${versions.plugin-api}

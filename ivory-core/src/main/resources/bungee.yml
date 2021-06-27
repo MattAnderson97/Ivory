@@ -1,0 +1,4 @@
+name: IvoryCore
+main: uk.ivorymc.global.bungee.IvoryBungee
+version: ${version}
+author: Wolveh
