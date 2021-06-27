@@ -2,6 +2,7 @@ package uk.ivorymc.global.bungee.commands.chat;
 
 import community.leaf.textchain.adventure.TextChain;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import uk.ivorymc.api.utils.Message;
 import uk.ivorymc.global.bungee.IvoryBungee;
@@ -32,13 +33,15 @@ public class ReplyCommand extends PlayerCommand
 
         TextChain.chain()
             .then("FROM")
-                .color(NamedTextColor.WHITE)
+                .color(TextColor.color(0x03DAC6))
                 .bold()
                 .italic()
             .then(" ")
                 .unformatted()
             .then(player.getDisplayName())
+                .color(NamedTextColor.GRAY)
             .then(": ")
+                .color(NamedTextColor.WHITE)
             .then(message)
                 .tooltip("Click to reply")
             .suggest("/msg " + player.getName())
@@ -46,13 +49,15 @@ public class ReplyCommand extends PlayerCommand
 
         TextChain.chain()
             .then("TO")
-            .color(NamedTextColor.WHITE)
+                .color(TextColor.color(0x03DAC6))
                 .bold()
                 .italic()
             .then(" ")
                 .unformatted()
             .then(target.getDisplayName())
+                .color(NamedTextColor.GRAY)
             .then(": ")
+                .color(NamedTextColor.WHITE)
             .then(message)
             .send(plugin.adventure().player(player));
 

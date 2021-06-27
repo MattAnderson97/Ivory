@@ -2,6 +2,7 @@ package uk.ivorymc.global.bungee.commands.chat;
 
 import community.leaf.textchain.adventure.TextChain;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
@@ -28,7 +29,7 @@ public class MsgCommand extends Command
         if (args.length < 2)
         {
             Message.error("Not enough arguments!", "/message <player> message")
-                    .send(plugin.adventure().sender(sender));
+                .send(plugin.adventure().sender(sender));
             return;
         }
 
@@ -46,13 +47,15 @@ public class MsgCommand extends Command
 
         TextChain.chain()
             .then("FROM")
-                .color(NamedTextColor.WHITE)
+                .color(TextColor.color(0x03DAC6))
                 .bold()
                 .italic()
             .then(" ")
                 .unformatted()
             .then(senderName)
+                .color(NamedTextColor.GRAY)
             .then(": ")
+                .color(NamedTextColor.WHITE)
             .then(message)
                 .tooltip("Click to reply")
                 .suggest("/msg " + sender.getName())
@@ -60,13 +63,15 @@ public class MsgCommand extends Command
 
         TextChain.chain()
             .then("TO")
-                .color(NamedTextColor.WHITE)
+                .color(TextColor.color(0x03DAC6))
                 .bold()
                 .italic()
             .then(" ")
                 .unformatted()
             .then(target.getDisplayName())
+                .color(NamedTextColor.GRAY)
             .then(": ")
+                .color(NamedTextColor.WHITE)
             .then(message)
             .send(plugin.adventure().sender(sender));
 

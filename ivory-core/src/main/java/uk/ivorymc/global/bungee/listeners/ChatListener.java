@@ -18,6 +18,8 @@ public record ChatListener(IvoryBungee plugin) implements Listener
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(ChatEvent event)
     {
+        if (event.isCommand() || event.isProxyCommand()) { return; }
+
         event.setCancelled(true);
 
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
@@ -30,6 +32,7 @@ public record ChatListener(IvoryBungee plugin) implements Listener
 
         TextChain chatMessage = TextChain.chain()
             .then(player.getDisplayName())
+                .color(NamedTextColor.GRAY)
             .tooltip(tooltip -> tooltip
                 .then(player.getName())
                 .nextLine()
