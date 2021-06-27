@@ -12,17 +12,22 @@ import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
 import uk.ivorymc.api.playerdata.BungeePlayerData;
 import uk.ivorymc.global.bungee.IvoryBungee;
+import uk.ivorymc.global.bungee.events.PlayerCommandEvent;
 
 public record ChatListener(IvoryBungee plugin) implements Listener
 {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(ChatEvent event)
     {
-        if (event.isCommand() || event.isProxyCommand()) { return; }
+        if (!(event.getSender() instanceof ProxiedPlayer player)) { return; }
+        if (event.isCommand() || event.isProxyCommand())
+        {
+            plugin.getProxy().getPluginManager().callEvent(new PlayerCommandEvent(player, event.getMessage()));
+            return;
+        }
 
         event.setCancelled(true);
 
-        ProxiedPlayer player = (ProxiedPlayer) event.getSender();
         BungeePlayerData playerData = plugin.getPlayerData(player);
 
         String originalMessage = event.getMessage();
