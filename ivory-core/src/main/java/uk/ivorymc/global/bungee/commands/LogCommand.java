@@ -2,6 +2,8 @@ package uk.ivorymc.global.bungee.commands;
 
 import community.leaf.textchain.adventure.TextChain;
 import me.justeli.sqlwrapper.SQL;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
@@ -53,7 +55,7 @@ public class LogCommand extends Command
             plugin.getSqlController().sql().query(
                 "SELECT * FROM " + logType + "_logs"
             ).select().queue(resultSet ->
-                parseResults(resultSet, true, sender)
+                parseResults(resultSet, logType, true, "global", sender)
             );
         }
         else
@@ -68,12 +70,12 @@ public class LogCommand extends Command
                 "SELECT * FROM chat_logs WHERE player_uuid = ?",
                 (Object) SQL.uuidToBytes(targetOptional.get().getUniqueId())
             ).select().queue(resultSet ->
-                parseResults(resultSet, false, sender)
+                parseResults(resultSet, logType, false, targetOptional.get().getName(), sender)
             );
         }
     }
 
-    private void parseResults(ResultSet results, boolean global, CommandSender sender)
+    private void parseResults(ResultSet results, String logType, boolean global, String targetName, CommandSender sender)
     {
         List<String> lines = new ArrayList<>();
         try
@@ -99,6 +101,22 @@ public class LogCommand extends Command
         {
             e.printStackTrace();
         }
+        TextChain.chain()
+            .then("Logs ")
+                .color(NamedTextColor.WHITE)
+                .bold()
+            .then(" >")
+                .color(TextColor.color(0x018786))
+            .then("> ")
+                .color(TextColor.color(0x03DAC6))
+            .then(logType)
+                .color(NamedTextColor.WHITE)
+            .then(" (")
+            .then(targetName)
+                .color(TextColor.color(0x03DAC6))
+            .then(")")
+                .color(NamedTextColor.WHITE)
+            .send(plugin.adventure().sender(sender));
         lines.forEach(line -> TextChain.chain().then(line).send(plugin.adventure().sender(sender)));
     }
 }
