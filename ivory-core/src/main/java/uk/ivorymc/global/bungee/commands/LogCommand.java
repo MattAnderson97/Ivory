@@ -29,22 +29,29 @@ public class LogCommand extends Command
     }
 
     @Override
-    public void execute(CommandSender commandSender, String[] args)
+    public void execute(CommandSender sender, String[] args)
     {
+        if (!sender.hasPermission("staff.logs"))
+        {
+            Message.error("You don't have permission to run this command.", "")
+                .send(plugin.adventure().sender(sender));
+            return;
+        }
+
         if (args.length < 2)
         {
             Message.error(
                 "Not enough arguments", "/log <log-type> <player|global> [<page>]"
-            ).send(plugin.adventure().sender(commandSender));
+            ).send(plugin.adventure().sender(sender));
             return;
         }
 
         switch(args[0].toLowerCase())
         {
-            case "chat" -> getLogs("chat", args[1], args[1].equalsIgnoreCase("global"), commandSender);
-            case "command", "cmd" -> getLogs("command", args[1], args[1].equalsIgnoreCase("global"), commandSender);
+            case "chat" -> getLogs("chat", args[1], args[1].equalsIgnoreCase("global"), sender);
+            case "command", "cmd" -> getLogs("command", args[1], args[1].equalsIgnoreCase("global"), sender);
             default -> Message.error("Invalid log type", "/log <chat|cmd> <player|global> [<page>]")
-                            .send(plugin.adventure().sender(commandSender));
+                            .send(plugin.adventure().sender(sender));
         }
     }
 
@@ -77,7 +84,7 @@ public class LogCommand extends Command
 
     private void parseResults(ResultSet results, String logType, boolean global, String targetName, CommandSender sender)
     {
-        List<String> lines = new ArrayList<>();
+        List<TextChain> lines = new ArrayList<>();
         try
         {
             while(results.next())
@@ -89,11 +96,32 @@ public class LogCommand extends Command
 
                 if (global)
                 {
-                    lines.add("[" + timestamp + "] " + player.getName() + ": " + message);
+                    lines.add(TextChain.chain()
+                        .then("[")
+                            .color(TextColor.color(0x018786))
+                        .then(timestamp)
+                            .color(TextColor.color(0x03DAC6))
+                        .then("] ")
+                            .color(TextColor.color(0x018786))
+                        .then(player.getName())
+                            .color(NamedTextColor.WHITE)
+                        .then(": ")
+                        .then(message)
+                    );
                 }
                 else
                 {
-                    lines.add("[" + timestamp + "] " + message);
+                    lines.add(TextChain.chain()
+                        .then("[")
+                            .color(TextColor.color(0x018786))
+                        .then(timestamp)
+                            .color(TextColor.color(0x03DAC6))
+                        .then("] ")
+                            .color(TextColor.color(0x018786))
+                        .then(": ")
+                            .color(NamedTextColor.WHITE)
+                        .then(message)
+                    );
                 }
             }
         }
@@ -101,11 +129,12 @@ public class LogCommand extends Command
         {
             e.printStackTrace();
         }
+
         TextChain.chain()
             .then("Logs ")
                 .color(NamedTextColor.WHITE)
                 .bold()
-            .then(" >")
+            .then(">")
                 .color(TextColor.color(0x018786))
             .then("> ")
                 .color(TextColor.color(0x03DAC6))
@@ -117,6 +146,6 @@ public class LogCommand extends Command
             .then(")")
                 .color(NamedTextColor.WHITE)
             .send(plugin.adventure().sender(sender));
-        lines.forEach(line -> TextChain.chain().then(line).send(plugin.adventure().sender(sender)));
+        lines.forEach(line -> line.send(plugin.adventure().sender(sender)));
     }
 }
