@@ -9,6 +9,8 @@ import net.md_5.bungee.api.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import pl.tlinkowski.annotation.basic.NullOr;
 import uk.ivorymc.api.playerdata.BungeePlayerData;
+import uk.ivorymc.api.storage.SQLController;
+import uk.ivorymc.api.storage.YamlFile;
 import uk.ivorymc.global.bungee.commands.ListCommand;
 import uk.ivorymc.global.bungee.commands.LogCommand;
 import uk.ivorymc.global.bungee.commands.chat.MailCommand;
@@ -27,6 +29,8 @@ import java.util.Optional;
 public class IvoryBungee extends Plugin implements BungeeTextChainSource
 {
     private @NullOr BungeeAudiences audiences;
+    private ConfigFile configFile;
+    private SQLController sqlController;
 
     private LogFile globalChatLog;
     private Map<String, LogFile> playerChatLogs;
@@ -38,11 +42,33 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     {
         this.audiences = BungeeAudiences.create(this);
 
-        globalChatLog = new LogFile(
-            Path.of(getDataFolder().getAbsolutePath(), "logs", "chat"), "global_chat.log", this
-        );
-        playerChatLogs = new HashMap<>();
+        // get config
+        configFile = new ConfigFile(this, Path.of(this.getDataFolder().getAbsolutePath()), "config.yml");
+        // ensure config values exist
+        configFile.saveDefaults();
+
+        // get db config values
+        String db_name = configFile.getConfig().getString("mysql.database");
+        String host = configFile.getConfig().getString("mysql.host");
+        int port = configFile.getConfig().getInt("mysql.port");
+        String username = configFile.getConfig().getString("mysql.username");
+        String password = configFile.getConfig().getString("mysql.password");
+        // get db connection
+        this.sqlController = new SQLController(db_name, host, port, username, password);
+        // prepare tables
+        createTables();
+
+        // prepare other vars
+
+        // local log files
+        // globalChatLog = new LogFile(
+        //     Path.of(getDataFolder().getAbsolutePath(), "logs", "chat"), "global_chat.log", this
+        // );
+        // playerChatLogs = new HashMap<>();
+
+        // player data
         playerDataMap = new HashMap<>();
+        // replies
         replyMap = new HashMap<>();
 
         register();
@@ -63,6 +89,28 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     {
         if (this.audiences != null) { return this.audiences; }
         throw new IllegalStateException("Audiences not initialized (plugin is disabled).");
+    }
+
+    private void createTables()
+    {
+        // create chat log table
+        sqlController.createTable(
+            "chat_logs",
+            "id INT NOT NULL AUTO_INCREMENT",
+            "player_uuid BINARY(16) NOT NULL",
+            "date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "message TEXT NOT NULL",
+            "PRIMARY KEY (id)"
+        );
+        // create command log table
+        sqlController.createTable(
+            "command_logs",
+            "id INT NOT NULL AUTO_INCREMENT",
+            "player_uuid BINARY(16) NOT NULL",
+            "date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "message TEXT NOT NULL",
+            "PRIMARY KEY (id)"
+        );
     }
 
     private void register()
@@ -96,6 +144,8 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         getProxy().getScheduler().runAsync(this, runnable);
     }
 
+    public SQLController getSqlController() { return sqlController; }
+
     public LogFile getGlobalChatLog()
     {
         return globalChatLog;
@@ -108,9 +158,9 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         if (!playerChatLogs.containsKey(UUID))
         {
             playerChatLogs.put(UUID, new LogFile(
-                    Path.of(getDataFolder().getAbsolutePath(), "logs", "chat", "players"),
-                    UUID + ".log",
-                    this
+                Path.of(getDataFolder().getAbsolutePath(), "logs", "chat", "players"),
+                UUID + ".log",
+                this
             ));
         }
         return playerChatLogs.get(UUID);

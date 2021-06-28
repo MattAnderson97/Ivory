@@ -12,7 +12,7 @@ public class BukkitPlayerData extends YamlFile
 
     public BukkitPlayerData(Path path, Player player, Module plugin)
     {
-        super(path, player.getUniqueId().toString() + ".yml");
+        super(path, player.getUniqueId() + ".yml");
         this.plugin = plugin;
     }
 

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>plugins</artifactId>
+        <groupId>uk.ivorymc</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>me.justeli</groupId>
+    <artifactId>SQLWrapper</artifactId>
+
+    <dependencies>
+        <!--
+        HikariCP
+        -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>4.0.3</version>
+        </dependency>
+        <!--
+        mariadb
+        -->
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>2.7.2</version>
+        </dependency>
+        <!--
+        google annotations
+        -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
+        <shade.relocation>me.justeli.shaded</shade.relocation>
+    </properties>
+
+    <build>
+        <finalName>${project.name}-v${project.version}</finalName>
+        <plugins>
+            <!-- Shade dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.3.0-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <relocations>
+                        <!--HikariCP-->
+                        <relocation>
+                            <pattern>com.zaxxer.hikari</pattern>
+                            <shadedPattern>${shade.relocation}.com.zaxxer.hikari</shadedPattern>
+                        </relocation>
+                        <!--
+                        mariadb
+                        -->
+                        <relocation>
+                            <pattern>org.mariadb.jdbc</pattern>
+                            <shadedPattern>${shade.relocation}.org.mariadb.jdbc</shadedPattern>
+                        </relocation>
+                    </relocations>
+                    <artifactSet>
+                        <!-- Exclude annotations from built jar -->
+                        <excludes>
+                            <exclude>org.checkerframework:checker-qual</exclude>
+                            <exclude>org.jetbrains:annotations</exclude>
+                            <exclude>org.jetbrains.kotlin:kotlin-annotations-jvm</exclude>
+                            <exclude>com.google.code.findbugs:jsr305</exclude>
+                            <exclude>pl.tlinkowski.annotation:pl.tlinkowski.annotation.basic</exclude>
+                        </excludes>
+                    </artifactSet>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

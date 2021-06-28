@@ -12,6 +12,7 @@
         <module>ivory-core</module>
         <module>ivory-staff</module>
         <module>ivory-survival</module>
+        <module>SQLWrapper</module>
     </modules>
 
     <properties>

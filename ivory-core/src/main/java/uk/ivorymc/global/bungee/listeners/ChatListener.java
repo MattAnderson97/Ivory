@@ -2,6 +2,7 @@ package uk.ivorymc.global.bungee.listeners;
 
 import community.leaf.textchain.adventure.TextChain;
 
+import me.justeli.sqlwrapper.SQL;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -68,8 +69,14 @@ public record ChatListener(IvoryBungee plugin) implements Listener
         plugin.getProxy().getPlayers().forEach(
             loopPlayer -> chatMessage.send(plugin.adventure().player(loopPlayer))
         );
+
         // write to chat logs
-        plugin.getPlayerChatLog(player).log(originalMessage);
-        plugin.getGlobalChatLog().log(player.getName() + ": " + originalMessage);
+        plugin.getSqlController().sql().query(
+            "INSERT INTO chat_logs(player_uuid, message) VALUES(?, ?)",
+            SQL.uuidToBytes(player.getUniqueId()),
+            originalMessage
+        ).queue();
+        // plugin.getPlayerChatLog(player).log(originalMessage);
+        // plugin.getGlobalChatLog().log(player.getName() + ": " + originalMessage);
     }
 }

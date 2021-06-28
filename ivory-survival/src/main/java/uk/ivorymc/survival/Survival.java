@@ -13,6 +13,6 @@ public class Survival extends Module
     @Override
     protected void registerEvents()
     {
-
+        
     }
 }
