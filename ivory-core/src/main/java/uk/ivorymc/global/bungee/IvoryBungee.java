@@ -1,5 +1,7 @@
 package uk.ivorymc.global.bungee;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import community.leaf.textchain.bungeecord.BungeeTextChainSource;
 import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -10,36 +12,39 @@ import org.jetbrains.annotations.NotNull;
 import pl.tlinkowski.annotation.basic.NullOr;
 import uk.ivorymc.api.playerdata.BungeePlayerData;
 import uk.ivorymc.api.storage.SQLController;
-import uk.ivorymc.api.storage.YamlFile;
 import uk.ivorymc.global.bungee.commands.ListCommand;
 import uk.ivorymc.global.bungee.commands.LogCommand;
 import uk.ivorymc.global.bungee.commands.chat.MailCommand;
 import uk.ivorymc.global.bungee.commands.chat.MsgCommand;
 import uk.ivorymc.global.bungee.commands.chat.ReplyCommand;
 import uk.ivorymc.global.bungee.listeners.ChatListener;
+import uk.ivorymc.global.bungee.listeners.CommandListener;
 import uk.ivorymc.global.bungee.listeners.JoinListener;
 import uk.ivorymc.global.bungee.listeners.QuitListener;
-import uk.ivorymc.global.bungee.logging.LogFile;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class IvoryBungee extends Plugin implements BungeeTextChainSource
 {
     private @NullOr BungeeAudiences audiences;
     private ConfigFile configFile;
     private SQLController sqlController;
 
-    private LogFile globalChatLog;
-    private Map<String, LogFile> playerChatLogs;
     private Map<String, BungeePlayerData> playerDataMap;
     private Map<String, String> replyMap;
 
     @Override
     public void onEnable()
     {
+        // prepare plugin message channel
+        getProxy().registerChannel( "ivory:messaging" );
+
+        // prepare adventure audience
         this.audiences = BungeeAudiences.create(this);
 
         // get config
@@ -59,12 +64,6 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         createTables();
 
         // prepare other vars
-
-        // local log files
-        // globalChatLog = new LogFile(
-        //     Path.of(getDataFolder().getAbsolutePath(), "logs", "chat"), "global_chat.log", this
-        // );
-        // playerChatLogs = new HashMap<>();
 
         // player data
         playerDataMap = new HashMap<>();
@@ -93,22 +92,33 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
 
     private void createTables()
     {
+        // create player table
+        sqlController.createTable(
+                "player",
+                "uuid BINARY(16) NOT NULL UNIQUE",
+                "name TEXT NOT NULL",
+                "nickname TEXT DEFAULT NULL",
+                "join_date DATETIME NOT NULL",
+                "play_time LONG NOT NULL DEFAULT 0",
+                "donor BOOLEAN DEFAULT FALSE",
+                "PRIMARY KEY (uuid)"
+        );
         // create chat log table
         sqlController.createTable(
             "chat_logs",
             "id INT NOT NULL AUTO_INCREMENT",
-            "player_uuid BINARY(16) NOT NULL",
             "date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
             "message TEXT NOT NULL",
+            "player_uuid BINARY(16) NOT NULL REFERENCES player(uuid)",
             "PRIMARY KEY (id)"
         );
         // create command log table
         sqlController.createTable(
             "command_logs",
             "id INT NOT NULL AUTO_INCREMENT",
-            "player_uuid BINARY(16) NOT NULL",
             "date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
             "message TEXT NOT NULL",
+            "player_uuid BINARY(16) NOT NULL REFERENCES player(uuid)",
             "PRIMARY KEY (id)"
         );
     }
@@ -117,6 +127,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     {
         // register events
         register(new ChatListener(this));
+        register(new CommandListener(this));
         register(new JoinListener(this));
         register(new QuitListener(this));
         // register commands
@@ -145,26 +156,6 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     }
 
     public SQLController getSqlController() { return sqlController; }
-
-    public LogFile getGlobalChatLog()
-    {
-        return globalChatLog;
-    }
-
-    public LogFile getPlayerChatLog(ProxiedPlayer player)
-    {
-        String UUID = player.getUniqueId().toString();
-
-        if (!playerChatLogs.containsKey(UUID))
-        {
-            playerChatLogs.put(UUID, new LogFile(
-                Path.of(getDataFolder().getAbsolutePath(), "logs", "chat", "players"),
-                UUID + ".log",
-                this
-            ));
-        }
-        return playerChatLogs.get(UUID);
-    }
 
     public BungeePlayerData getPlayerData(ProxiedPlayer player)
     {
@@ -195,5 +186,38 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
             reply = Optional.of(replyMap.get(UUID));
         }
         return reply;
+    }
+
+    public void sendCustomData(ProxiedPlayer player, ByteArrayDataOutput out)
+    {
+        player.getServer().getInfo().sendData( "ivory:messaging", out.toByteArray() );
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    public void sendCustomData(ProxiedPlayer player, String subchannel)
+    {
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF( subchannel ); // the channel could be whatever you want
+        sendCustomData(player, out);
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    public void sendCustomData(ProxiedPlayer player, String subchannel, String data)
+    {
+        Collection<ProxiedPlayer> networkPlayers = this.getProxy().getPlayers();
+        // perform a check to see if globally are no players
+        if ( networkPlayers == null || networkPlayers.isEmpty() )
+        {
+            return;
+        }
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF( subchannel ); // the channel could be whatever you want
+        out.writeUTF( data ); // this data could be whatever you want
+
+        // we send the data to the server
+        // using ServerInfo the packet is being queued if there are no players in the server
+        // using only the server to send data the packet will be lost if no players are in it
+        sendCustomData(player, out);
     }
 }

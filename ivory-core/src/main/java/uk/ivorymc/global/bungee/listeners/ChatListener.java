@@ -12,8 +12,11 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
 import uk.ivorymc.api.playerdata.BungeePlayerData;
+import uk.ivorymc.api.utils.Message;
 import uk.ivorymc.global.bungee.IvoryBungee;
 import uk.ivorymc.global.bungee.events.PlayerCommandEvent;
+
+import java.util.Optional;
 
 public record ChatListener(IvoryBungee plugin) implements Listener
 {
@@ -32,6 +35,7 @@ public record ChatListener(IvoryBungee plugin) implements Listener
         BungeePlayerData playerData = plugin.getPlayerData(player);
 
         String originalMessage = event.getMessage();
+        TextChain formattedMessage = format(player, originalMessage);
 
         Server currentServer = player.getServer();
         String serverName = currentServer.getInfo().getName();
@@ -61,10 +65,7 @@ public record ChatListener(IvoryBungee plugin) implements Listener
                 .color(TextColor.color(0x018786))
             .then("> ")
                 .color(TextColor.color(0x03DAC6))
-            .then(originalMessage)
-                .color(NamedTextColor.WHITE)
-                .tooltip("Click to send a message")
-                .suggest("/msg " + player.getName() + " ");
+            .then(formattedMessage);
 
         plugin.getProxy().getPlayers().forEach(
             loopPlayer -> chatMessage.send(plugin.adventure().player(loopPlayer))
@@ -72,11 +73,47 @@ public record ChatListener(IvoryBungee plugin) implements Listener
 
         // write to chat logs
         plugin.getSqlController().sql().query(
-            "INSERT INTO chat_logs(player_uuid, message) VALUES(?, ?)",
-            SQL.uuidToBytes(player.getUniqueId()),
-            originalMessage
+            "INSERT INTO chat_logs(message,player_uuid) VALUES(?,?);",
+            originalMessage,
+            SQL.uuidToBytes(player.getUniqueId())
         ).queue();
-        // plugin.getPlayerChatLog(player).log(originalMessage);
-        // plugin.getGlobalChatLog().log(player.getName() + ": " + originalMessage);
+    }
+
+    private TextChain format(ProxiedPlayer player, String originalMessage)
+    {
+        String[] words = originalMessage.split(" ");
+        TextChain formattedMessage = TextChain.chain();
+
+        for (int i = 0; i < words.length; i++)
+        {
+            String word = words[i];
+            if (word.length() > 1)
+            {
+                switch (word.charAt(0))
+                {
+                    case '#' -> formattedMessage.then(Message.tag(word));
+                    case '@' -> formattedMessage.then(Message.ping(word, true, Optional.of(plugin)));
+                    default -> formattedMessage.then(word)
+                        .color(NamedTextColor.WHITE)
+                        .tooltip("Click to send a message")
+                        .suggest("/msg " + player.getName() + " ");
+                }
+            }
+            else
+            {
+                formattedMessage.then(word)
+                    .color(NamedTextColor.WHITE)
+                    .tooltip("Click to send a message")
+                    .suggest("/msg " + player.getName() + " ");
+            }
+            if (i < words.length - 1)
+            {
+                formattedMessage.then(" ")
+                    .tooltip("Click to send a message")
+                    .suggest("/msg " + player.getName() + " ");
+            }
+        }
+
+        return formattedMessage;
     }
 }

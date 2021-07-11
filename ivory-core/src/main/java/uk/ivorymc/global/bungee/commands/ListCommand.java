@@ -14,7 +14,7 @@ public class ListCommand extends Command
 
     public ListCommand(IvoryBungee plugin)
     {
-        super("list");
+        super("list", "", "players");
         this.plugin = plugin;
     }
 

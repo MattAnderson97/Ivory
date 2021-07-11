@@ -12,11 +12,6 @@ public class SQLController
         sql = SQL.open(name, host, port, username, password);
     }
 
-    public SQLController(String name, String username, String password)
-    {
-        sql = SQL.open(name, username, password);
-    }
-
     public void createTable(String tableName, String... columns)
     {
         SQLQuery query = sql.query(

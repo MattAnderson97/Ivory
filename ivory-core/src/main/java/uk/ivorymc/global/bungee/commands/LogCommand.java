@@ -14,6 +14,7 @@ import uk.ivorymc.global.bungee.IvoryBungee;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,20 +25,14 @@ public class LogCommand extends Command
 
     public LogCommand(IvoryBungee plugin)
     {
-        super("log");
+        super("log", "staff.logs");
         this.plugin = plugin;
     }
 
     @Override
     public void execute(CommandSender sender, String[] args)
     {
-        if (!sender.hasPermission("staff.logs"))
-        {
-            Message.error("You don't have permission to run this command.", "")
-                .send(plugin.adventure().sender(sender));
-            return;
-        }
-
+        // check for right amount of args
         if (args.length < 2)
         {
             Message.error(
@@ -46,56 +41,200 @@ public class LogCommand extends Command
             return;
         }
 
-        switch(args[0].toLowerCase())
+        // get log type
+        String logType = args[0];
+        // check if log type is valid
+        if (!(logType.equalsIgnoreCase("chat")
+            || logType.equalsIgnoreCase("cmd")
+            || logType.equalsIgnoreCase("command")
+        ))
         {
-            case "chat" -> getLogs("chat", args[1], args[1].equalsIgnoreCase("global"), sender);
-            case "command", "cmd" -> getLogs("command", args[1], args[1].equalsIgnoreCase("global"), sender);
-            default -> Message.error("Invalid log type", "/log <chat|cmd> <player|global> [<page>]")
-                            .send(plugin.adventure().sender(sender));
+            Message.error("Invalid log type", "/log <chat|cmd> <player|global> [<page>]")
+                .send(plugin.adventure().sender(sender));
+            return;
+        }
+        // update log type
+        logType = (logType.equalsIgnoreCase("chat")) ? "chat" : "command";
+
+        // get target argument
+        String targetName = args[1];
+        // check if command is getting global logs
+        boolean isGlobal = targetName.equalsIgnoreCase("global");
+        // try to get target from target name argument
+        Optional<ProxiedPlayer> targetOptional = PlayerUtils.getProxiedPlayer(targetName);
+        // player not found and not global
+        if (targetOptional.isEmpty() && !isGlobal)
+        {
+            Message.error("Player not found", targetName).send(plugin.adventure().sender(sender));
+            return;
+        }
+
+        // get actual target name
+        String target = (isGlobal ? "global" : targetOptional.get().getName());
+
+        // get logs
+        List<List<TextChain>> pages = new ArrayList<>();
+        switch(logType)
+        {
+            // get chat logs
+            case "chat" -> pages.addAll(
+                getLogs("chat", targetOptional, isGlobal)
+            );
+            // get command logs
+            case "command" -> pages.addAll(
+                getLogs("command", targetOptional, isGlobal)
+            );
+        }
+
+        // loop through logs if returned
+        if (!pages.isEmpty())
+        {
+            // get page to output, default to 1 if none provided or invalid
+            int pageNo = 1;
+            // check if page number was provided in command
+            if (args.length >= 3)
+            {
+                // try to get page number
+                try
+                {
+                    // ensure page number is an integer
+                   pageNo = Integer.parseInt(args[2]);
+                   // bound to size of pages list
+                   if (pageNo > pages.size())
+                   {
+                       pageNo = pages.size();
+                   }
+                   // set lower bound to 1
+                   if (pageNo < 1)
+                   {
+                       pageNo = 1;
+                   }
+                }
+                catch(NumberFormatException ignored){}
+            }
+
+            // send log title
+            TextChain.chain()
+                .then("Logs ")
+                    .color(NamedTextColor.WHITE)
+                    .bold()
+                .then(">")
+                    .color(TextColor.color(0x018786))
+                .then("> ")
+                    .color(TextColor.color(0x03DAC6))
+                .then(logType)
+                    .color(NamedTextColor.WHITE)
+                .then(" (")
+                .then(target)
+                    .color(TextColor.color(0x03DAC6))
+                .then(")")
+                    .color(NamedTextColor.WHITE)
+                    .send(plugin.adventure().sender(sender));
+
+            // get page from list
+            List<TextChain> page = pages.get(pageNo - 1);
+            // send page
+            page.forEach(line -> line.send(plugin.adventure().sender(sender)));
+            // send footer
+            TextChain pre = TextChain.chain(), post = TextChain.chain();
+            // footer prefix
+            if (pageNo > 1)
+            {
+                pre.then("<<")
+                        .bold()
+                        .color(TextColor.color(0x018786))
+                        .suggest("/log " + logType + " " + targetName + " 1")
+                    .then(" ")
+                    .then("<")
+                        .bold()
+                        .color(TextColor.color(0x03DAC6))
+                        .suggest("/log " + logType + " " + targetName + " " + (pageNo - 1))
+                    .then(" ");
+            }
+            else
+            {
+                pre.then("<< < ").bold().color(NamedTextColor.DARK_GRAY);
+            }
+            // footer suffix
+            if (pageNo < pages.size())
+            {
+                post.then(" ")
+                    .then(">")
+                        .bold()
+                        .color(TextColor.color(0x03DAC6))
+                        .suggest("/log " + logType + " " + targetName + " " + (pageNo + 1))
+                    .then(" ")
+                    .then(">>")
+                        .bold()
+                        .color(TextColor.color(0x018786))
+                        .suggest("/log " + logType + " " + targetName + " " + pages.size());
+            }
+            else
+            {
+                post.then(" > >>").bold().color(NamedTextColor.DARK_GRAY);
+            }
+
+            TextChain.chain()
+                .then(pre)
+                .then("(")
+                    .unformatted()
+                    .color(NamedTextColor.WHITE)
+                .then(String.valueOf(pageNo))
+                    .color(TextColor.color(0x03DAC6))
+                .then("/")
+                    .color(NamedTextColor.WHITE)
+                .then(String.valueOf(pages.size()))
+                    .color(TextColor.color(0x03DAC6))
+                .then(")")
+                    .color(NamedTextColor.WHITE)
+                .then(post)
+                .send(plugin.adventure().sender(sender));
         }
     }
 
-    private void getLogs(String logType, String targetName, boolean global, CommandSender sender)
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private List<List<TextChain>> getLogs(String logType, Optional<ProxiedPlayer> targetOptional, boolean global)
     {
+        List<List<TextChain>> lines = new ArrayList<>();
         if (global)
         {
             plugin.getSqlController().sql().query(
                 "SELECT * FROM " + logType + "_logs"
-            ).select().queue(resultSet ->
-                parseResults(resultSet, logType, true, "global", sender)
+            ).select().complete(resultSet ->
+                lines.addAll(parseResults(resultSet,true))
             );
         }
         else
         {
-            Optional<ProxiedPlayer> targetOptional = PlayerUtils.getProxiedPlayer(targetName);
             if (targetOptional.isEmpty())
             {
-                Message.error("Player not found", targetName).send(plugin.adventure().sender(sender));
-                return;
+                return Collections.emptyList();
             }
             plugin.getSqlController().sql().query(
-                "SELECT * FROM chat_logs WHERE player_uuid = ?",
-                (Object) SQL.uuidToBytes(targetOptional.get().getUniqueId())
-            ).select().queue(resultSet ->
-                parseResults(resultSet, logType, false, targetOptional.get().getName(), sender)
+                "SELECT * FROM " + logType + "_logs WHERE player_uuid = ?",
+                new Object[]{SQL.uuidToBytes(targetOptional.get().getUniqueId())}
+            ).select().complete(resultSet ->
+                lines.addAll(parseResults(resultSet, false))
             );
         }
+        return lines;
     }
 
-    private void parseResults(ResultSet results, String logType, boolean global, String targetName, CommandSender sender)
+    private List<List<TextChain>> parseResults(ResultSet results, boolean global)
     {
         List<TextChain> lines = new ArrayList<>();
         try
         {
             while(results.next())
             {
-                UUID playerUUID = SQL.bytesToUuid(results.getBytes("player_uuid"));
-                ProxiedPlayer player = plugin.getProxy().getPlayer(playerUUID);
                 String timestamp = results.getTimestamp("date").toString();
                 String message = results.getString("message");
 
                 if (global)
                 {
+                    UUID playerUUID = SQL.bytesToUuid(results.getBytes("player_uuid"));
+                    ProxiedPlayer player = plugin.getProxy().getPlayer(playerUUID);
+
                     lines.add(TextChain.chain()
                         .then("[")
                             .color(TextColor.color(0x018786))
@@ -104,7 +243,7 @@ public class LogCommand extends Command
                         .then("] ")
                             .color(TextColor.color(0x018786))
                         .then(player.getName())
-                            .color(NamedTextColor.WHITE)
+                            .color(NamedTextColor.AQUA)
                         .then(": ")
                         .then(message)
                     );
@@ -118,8 +257,6 @@ public class LogCommand extends Command
                             .color(TextColor.color(0x03DAC6))
                         .then("] ")
                             .color(TextColor.color(0x018786))
-                        .then(": ")
-                            .color(NamedTextColor.WHITE)
                         .then(message)
                     );
                 }
@@ -130,22 +267,7 @@ public class LogCommand extends Command
             e.printStackTrace();
         }
 
-        TextChain.chain()
-            .then("Logs ")
-                .color(NamedTextColor.WHITE)
-                .bold()
-            .then(">")
-                .color(TextColor.color(0x018786))
-            .then("> ")
-                .color(TextColor.color(0x03DAC6))
-            .then(logType)
-                .color(NamedTextColor.WHITE)
-            .then(" (")
-            .then(targetName)
-                .color(TextColor.color(0x03DAC6))
-            .then(")")
-                .color(NamedTextColor.WHITE)
-            .send(plugin.adventure().sender(sender));
-        lines.forEach(line -> line.send(plugin.adventure().sender(sender)));
+        return Message.paginate(8, lines);
+
     }
 }

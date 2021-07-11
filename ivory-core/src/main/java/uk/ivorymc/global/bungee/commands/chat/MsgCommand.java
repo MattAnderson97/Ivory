@@ -19,7 +19,7 @@ public class MsgCommand extends Command
 
     public MsgCommand(IvoryBungee plugin)
     {
-        super("message");
+        super("message", "", "msg", "m", "whisper", "w", "pm");
         this.plugin = plugin;
     }
 

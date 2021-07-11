@@ -15,7 +15,7 @@ public class ReplyCommand extends PlayerCommand
 {
     public ReplyCommand(IvoryBungee plugin)
     {
-        super("reply", plugin);
+        super(plugin, "reply", "", "re", "r");
     }
 
     @Override
