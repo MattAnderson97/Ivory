@@ -98,7 +98,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
                 "uuid BINARY(16) NOT NULL UNIQUE",
                 "name TEXT NOT NULL",
                 "nickname TEXT DEFAULT NULL",
-                "join_date DATETIME NOT NULL",
+                "join_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
                 "play_time LONG NOT NULL DEFAULT 0",
                 "donor BOOLEAN DEFAULT FALSE",
                 "PRIMARY KEY (uuid)"
