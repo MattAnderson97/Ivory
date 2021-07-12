@@ -121,6 +121,16 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
             "player_uuid BINARY(16) NOT NULL REFERENCES player(uuid)",
             "PRIMARY KEY (id)"
         );
+        // create mail table
+        sqlController.createTable(
+            "mail",
+            "id INT NOT NULL AUTO_INCREMENT",
+            "message TEXT NOT NULL",
+            "date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "sender_uuid BINARY(16) NOT NULL REFERENCES player(uuid)",
+            "recipient_uuid BINARY(16) REFERENCES player(uuid) DEFAULT NULL",
+            "PRIMARY KEY (id)"
+        );
     }
 
     private void register()

@@ -211,7 +211,7 @@ public class LogCommand extends Command
                 return Collections.emptyList();
             }
             plugin.getSqlController().sql().query(
-                "SELECT * FROM " + logType + "_logs WHERE player_uuid = ?",
+                "SELECT * FROM " + logType + "_logs WHERE player_uuid = ? ORDER BY date DESC",
                 new Object[]{SQL.uuidToBytes(targetOptional.get().getUniqueId())}
             ).select().complete(resultSet ->
                 lines.addAll(parseResults(resultSet, false))
