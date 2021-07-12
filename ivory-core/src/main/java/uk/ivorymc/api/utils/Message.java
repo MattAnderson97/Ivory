@@ -2,6 +2,7 @@ package uk.ivorymc.api.utils;
 
 import community.leaf.textchain.adventure.TextChain;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.bukkit.entity.Player;
 import uk.ivorymc.global.bungee.IvoryBungee;
@@ -73,5 +74,10 @@ public class Message
             }
         }
         return chain;
+    }
+
+    public static String formatted(String text)
+    {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
 }

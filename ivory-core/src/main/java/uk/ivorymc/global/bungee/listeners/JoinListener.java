@@ -2,15 +2,16 @@ package uk.ivorymc.global.bungee.listeners;
 
 import community.leaf.textchain.adventure.TextChain;
 import me.justeli.sqlwrapper.SQL;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PostLoginEvent;
+import net.md_5.bungee.api.event.ServerConnectedEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import uk.ivorymc.api.storage.SQLController;
 import uk.ivorymc.global.bungee.IvoryBungee;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public record JoinListener(IvoryBungee plugin) implements Listener
 {
@@ -25,31 +26,32 @@ public record JoinListener(IvoryBungee plugin) implements Listener
             SQL.uuidToBytes(player.getUniqueId()),
             player.getName()
         ).queue();
-        // check for mail
-        List<TextChain> mail = new ArrayList<>();
-        // get all mail from the mail table that's for the player or global
-        // along with the sender's name from the player table via an inner join
-        sqlController.sql().query(
-            "SELECT mail.sender_uuid, mail.message as message, mail.date as date, player.name as sender_name " +
-            "FROM mail WHERE mail.recipient_uuid = ? AND mail.sender_uuid != ?" +
-            "INNER JOIN player ON mail.sender_uuid=player.uuid",
-            SQL.uuidToBytes(player.getUniqueId()),
-            SQL.uuidToBytes(player.getUniqueId())
-        ).select().queue(result -> {
-            while (result.next())
-            {
-                mail.add(
+    }
+
+    @EventHandler
+    public void onServerJoin(ServerConnectedEvent event)
+    {
+        ProxiedPlayer player = event.getPlayer();
+
+        // run delayed task (sync)
+        plugin.getProxy().getScheduler().schedule(plugin,
+            // set anonymous runnable method to the query
+            () -> plugin.getSqlController().sql().query(
+                "SELECT EXISTS(SELECT * FROM mail WHERE recipient_uuid like ?) AS 'exists';", // is there any mail for the player
+                new Object[]{SQL.uuidToBytes(player.getUniqueId())}
+            ).select().queue(result -> {
+                // check if the result is true or false
+                result.next();
+                if (result.getBoolean("exists"))
+                {
+                    // send prompt to player
                     TextChain.chain()
-                        .then(result.getString("message"))
-                        .nextLine()
-                        .then("From: ")
-                        .then(result.getString("sender_name"))
-                        .then(", ")
-                        .then(result.getTimestamp("date").toString())
-                );
-            }
-        });
-        // send any found mail
-        mail.forEach(message -> message.send(plugin.adventure().sender(player)));
+                        .then("You have unread messages. Read them with /mail read")
+                            .color(TextColor.color(0x03DAC6))
+                        .send(plugin.adventure().sender(player));
+                }
+            }), 1000, TimeUnit.MILLISECONDS
+        );
+        //plugin.getMailHandler().readMail(player);
     }
 }

@@ -99,6 +99,15 @@
             <artifactId>SQLWrapper</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <!--
+        Luck perms
+        -->
+        <dependency>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>5.3</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -9,6 +9,12 @@ public abstract class PlayerCommand extends Command
 {
     protected final IvoryBungee plugin;
 
+    public PlayerCommand(IvoryBungee plugin, String name)
+    {
+        super(name);
+        this.plugin = plugin;
+    }
+
     public PlayerCommand(IvoryBungee plugin, String name, String permission, String... aliases)
     {
         super(name, permission, aliases);

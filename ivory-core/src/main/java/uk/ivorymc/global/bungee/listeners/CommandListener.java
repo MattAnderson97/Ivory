@@ -15,7 +15,7 @@ public record CommandListener(IvoryBungee plugin) implements Listener
         ProxiedPlayer player = event.getPlayer();
         String command = event.getCommand();
         plugin.getSqlController().sql().query(
-            /* "INSERT INTO command_logs(message,player_uuid) VALUES(?,(SELECT uuid FROM player WHERE uuid = ?));"*/
+            /* "INSERT INTO command_logs(message,player_uuid) VALUES(?,(SELECT uuid FROM player WHERE uuid = ?));" */
             "INSERT INTO command_logs(message, player_uuid) VALUES(?,?);",
             command,
             SQL.uuidToBytes(player.getUniqueId())

@@ -5,6 +5,8 @@ import community.leaf.textchain.adventure.TextChain;
 import me.justeli.sqlwrapper.SQL;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.ChatEvent;
@@ -16,6 +18,7 @@ import uk.ivorymc.api.utils.Message;
 import uk.ivorymc.global.bungee.IvoryBungee;
 import uk.ivorymc.global.bungee.events.PlayerCommandEvent;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public record ChatListener(IvoryBungee plugin) implements Listener
@@ -33,14 +36,14 @@ public record ChatListener(IvoryBungee plugin) implements Listener
         event.setCancelled(true);
 
         BungeePlayerData playerData = plugin.getPlayerData(player);
-
         String originalMessage = event.getMessage();
         TextChain formattedMessage = format(player, originalMessage);
 
         Server currentServer = player.getServer();
         String serverName = currentServer.getInfo().getName();
-
         TextChain chatMessage = TextChain.chain()
+            .then(getPrefix(player))
+            .then(" ")
             .then(player.getDisplayName())
                 .color(NamedTextColor.GRAY)
             .tooltip(tooltip -> tooltip
@@ -77,6 +80,26 @@ public record ChatListener(IvoryBungee plugin) implements Listener
             originalMessage,
             SQL.uuidToBytes(player.getUniqueId())
         ).queue();
+    }
+
+    private String getPrefix(ProxiedPlayer player)
+    {
+        // create empty optional for luckperms api as a fallback for if LP isn't loaded
+        Optional<LuckPerms> lpOptional = Optional.empty();
+        try
+        {
+            lpOptional = Optional.of(LuckPermsProvider.get());
+        }
+        catch (IllegalStateException ignored){} // luckperms not loaded
+
+        // try to get prefix, return empty string if LP isn't present
+        // require non-null for prefix and lp user object
+        // return formatted string (translate colour and format codes)
+        return Message.formatted(lpOptional.map(luckPerms -> Objects.requireNonNull(
+            Objects.requireNonNull(
+                luckPerms.getUserManager().getUser(player.getUniqueId())
+            ).getCachedData().getMetaData().getPrefix()
+        )).orElse(""));
     }
 
     private TextChain format(ProxiedPlayer player, String originalMessage)

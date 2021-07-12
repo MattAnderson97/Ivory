@@ -4,6 +4,8 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import community.leaf.textchain.bungeecord.BungeeTextChainSource;
 import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Listener;
@@ -34,6 +36,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     private @NullOr BungeeAudiences audiences;
     private ConfigFile configFile;
     private SQLController sqlController;
+    private MailHandler mailHandler;
 
     private Map<String, BungeePlayerData> playerDataMap;
     private Map<String, String> replyMap;
@@ -60,6 +63,8 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         String password = configFile.getConfig().getString("mysql.password");
         // get db connection
         this.sqlController = new SQLController(db_name, host, port, username, password);
+        // get mail handler
+        this.mailHandler = new MailHandler(this);
         // prepare tables
         createTables();
 
@@ -94,14 +99,14 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     {
         // create player table
         sqlController.createTable(
-                "player",
-                "uuid BINARY(16) NOT NULL UNIQUE",
-                "name TEXT NOT NULL",
-                "nickname TEXT DEFAULT NULL",
-                "join_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
-                "play_time LONG NOT NULL DEFAULT 0",
-                "donor BOOLEAN DEFAULT FALSE",
-                "PRIMARY KEY (uuid)"
+            "player",
+            "uuid BINARY(16) NOT NULL UNIQUE",
+            "name TEXT NOT NULL",
+            "nickname TEXT DEFAULT NULL",
+            "join_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "play_time LONG NOT NULL DEFAULT 0",
+            "donor BOOLEAN DEFAULT FALSE",
+            "PRIMARY KEY (uuid)"
         );
         // create chat log table
         sqlController.createTable(
@@ -128,7 +133,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
             "message TEXT NOT NULL",
             "date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
             "sender_uuid BINARY(16) NOT NULL REFERENCES player(uuid)",
-            "recipient_uuid BINARY(16) REFERENCES player(uuid) DEFAULT NULL",
+            "recipient_uuid BINARY(16) NOT NULL REFERENCES player(uuid)",
             "PRIMARY KEY (id)"
         );
     }
@@ -197,6 +202,8 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         }
         return reply;
     }
+
+    public MailHandler getMailHandler() { return mailHandler; }
 
     public void sendCustomData(ProxiedPlayer player, ByteArrayDataOutput out)
     {
