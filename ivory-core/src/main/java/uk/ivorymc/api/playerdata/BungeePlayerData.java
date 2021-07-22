@@ -20,4 +20,7 @@ public class BungeePlayerData extends YamlFile
     {
         plugin.async(this::save);
     }
+
+    @Override
+    public void saveDefaults() {}
 }

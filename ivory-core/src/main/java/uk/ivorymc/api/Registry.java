@@ -1,18 +1,21 @@
 package uk.ivorymc.api;
 
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
+import uk.ivorymc.api.interfaces.Command;
 
 public class Registry
 {
-    private final JavaPlugin plugin;
+    private final Module plugin;
 
-    public Registry(JavaPlugin plugin)
+    public Registry(Module plugin)
     {
         this.plugin = plugin;
     }
 
-    public void registerCommands() {}
+    public void registerCommands(Command command)
+    {
+        plugin.getAnnotationParser().parse(command);
+    }
 
     public void registerEvents(Listener listener)
     {

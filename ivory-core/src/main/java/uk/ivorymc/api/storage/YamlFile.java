@@ -1,36 +1,37 @@
 package uk.ivorymc.api.storage;
 
-import net.md_5.bungee.config.Configuration;
-import net.md_5.bungee.config.ConfigurationProvider;
-import net.md_5.bungee.config.YamlConfiguration;
+
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
 public abstract class YamlFile extends DataFile
 {
-    private final ConfigurationProvider provider;
-    private Configuration config;
+    private FileConfiguration config;
 
     public YamlFile(Path path, String name)
     {
         super(path, name);
-        this.provider = ConfigurationProvider.getProvider(YamlConfiguration.class);
+        this.config = new YamlConfiguration();
         try
         {
-            this.config = provider.load(file);
+            config.load(file);
         }
-        catch (IOException e)
+        catch (IOException | InvalidConfigurationException e)
         {
             e.printStackTrace();
         }
+        saveDefaults();
     }
 
     public void save()
     {
         try
         {
-            provider.save(config,file);
+            config.save(file);
         }
         catch (IOException e)
         {
@@ -49,10 +50,12 @@ public abstract class YamlFile extends DataFile
         return config.contains(key);
     }
 
-    public Configuration getConfig()
+    public FileConfiguration getConfig()
     {
         return config;
     }
 
     public abstract void saveAsync();
+
+    public abstract void saveDefaults();
 }

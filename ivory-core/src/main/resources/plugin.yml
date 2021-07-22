@@ -1,4 +1,4 @@
-name: IvoryMC
+name: IvoryCore
 main: uk.ivorymc.core.Core
 author: Wolveh
 version: ${version}

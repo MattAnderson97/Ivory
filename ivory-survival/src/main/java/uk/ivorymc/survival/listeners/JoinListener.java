@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import uk.ivorymc.survival.Survival;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -17,6 +18,13 @@ public class JoinListener implements Listener
         Material.LAVA, Material.WATER, Material.CACTUS, Material.MAGMA_BLOCK, Material.ACACIA_LEAVES, Material.AZALEA_LEAVES,
         Material.BIRCH_LEAVES, Material.OAK_LEAVES, Material.DARK_OAK_LEAVES, Material.JUNGLE_LEAVES, Material.SPRUCE_LEAVES
     };
+
+    private final Survival survival;
+
+    public JoinListener(Survival survival)
+    {
+        this.survival = survival;
+    }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event)
@@ -31,6 +39,8 @@ public class JoinListener implements Listener
             // teleport player to spawn location
             player.teleport(loc.add(0, 1, 0));
         }
+        survival.getWaypointsController().loadWaypoints(player);
+
     }
 
     private int getRandomCoord()

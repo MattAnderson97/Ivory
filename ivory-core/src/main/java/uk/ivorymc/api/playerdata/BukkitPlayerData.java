@@ -20,4 +20,7 @@ public class BukkitPlayerData extends YamlFile
     {
         plugin.async().run(this::save);
     }
+
+    @Override
+    public void saveDefaults() {}
 }

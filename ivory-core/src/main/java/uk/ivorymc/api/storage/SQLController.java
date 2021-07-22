@@ -17,7 +17,7 @@ public class SQLController
         SQLQuery query = sql.query(
             "CREATE TABLE IF NOT EXISTS " + tableName + "(" + String.join(",", columns) + ");"
         );
-        query.queue();
+        query.complete();
     }
 
     public SQL sql() { return sql; }

@@ -3,3 +3,4 @@ main: uk.ivorymc.survival.Survival
 version: ${version}
 api-version: ${versions.plugin-api}
 author: Wolveh
+depend: [IvoryCore]

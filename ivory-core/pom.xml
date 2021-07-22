@@ -68,6 +68,14 @@
             <version>${versions.kyori.adventure-platform}</version>
         </dependency>
         <!--
+        Kyori Adventure Bukkit Platform
+        -->
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-platform-bukkit</artifactId>
+            <version>4.0.0-SNAPSHOT</version>
+        </dependency>
+        <!--
         TextChain adventure
         -->
         <dependency>
@@ -108,6 +116,24 @@
             <version>5.3</version>
             <scope>provided</scope>
         </dependency>
+        <!--
+        Cloud Command Framework
+        -->
+        <dependency>
+            <groupId>cloud.commandframework</groupId>
+            <artifactId>cloud-paper</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>cloud.commandframework</groupId>
+            <artifactId>cloud-annotations</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>cloud.commandframework</groupId>
+            <artifactId>cloud-minecraft-extras</artifactId>
+            <version>1.5.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -130,28 +156,30 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <!--
                     <relocations>
-                        <!-- TextChain -->
+                        TextChain
                         <relocation>
                             <pattern>community.leaf.textchain</pattern>
                             <shadedPattern>${shade.relocation}.textchain</shadedPattern>
                         </relocation>
-                        <!-- Tasks -->
+                        Tasks
                         <relocation>
                             <pattern>community.leaf.tasks</pattern>
                             <shadedPattern>${shade.relocation}.tasks</shadedPattern>
                         </relocation>
-                        <!-- Kyori Adventure -->
+                        Kyori Adventure
                         <relocation>
                             <pattern>net.kyori</pattern>
                             <shadedPattern>${shade.relocation}.net.kyori</shadedPattern>
                         </relocation>
-                        <!-- Eli SQL -->
+                        Eli SQL
                         <relocation>
                             <pattern>me.justeli</pattern>
                             <shadedPattern>${shade.relocation}.me.justeli</shadedPattern>
                         </relocation>
                     </relocations>
+                    -->
                     <artifactSet>
                         <!-- Exclude annotations from built jar -->
                         <excludes>
