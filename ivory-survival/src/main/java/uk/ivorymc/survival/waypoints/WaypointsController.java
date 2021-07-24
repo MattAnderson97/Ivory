@@ -41,7 +41,11 @@ public class WaypointsController
             loadWaypoints(player);
         }
         return (hasWaypoints(player) ?
-            waypointsMap.get(player.getUniqueId()) : new ArrayList<>());
+            waypointsMap.get(player.getUniqueId())
+                .stream()
+                .sorted(Comparator.comparing(Waypoint::name))
+                .collect(Collectors.toList())
+            : new ArrayList<>());
     }
 
     public List<Waypoint> getWaypoints(OfflinePlayer player, Location loc)
@@ -78,10 +82,21 @@ public class WaypointsController
         return addWaypoint(owner, new Waypoint(name, owner, loc));
     }
 
-    public void deleteWaypoint(OfflinePlayer player, Waypoint waypoint)
+    public boolean deleteWaypoint(OfflinePlayer player, String waypoint)
     {
+        Optional<Waypoint> wpOptional = getWaypoint(player, waypoint);
+        return wpOptional.isPresent() && deleteWaypoint(player, wpOptional.get());
+    }
+
+    public boolean deleteWaypoint(OfflinePlayer player, Waypoint waypoint)
+    {
+        if (!exists(player, waypoint.name()))
+        {
+            return false;
+        }
         waypointsMap.remove(player.getUniqueId());
         survival.getSqlController().sql().query("DELETE FROM waypoints WHERE name = ?", waypoint.name()).queue();
+        return true;
     }
 
     public boolean updateWaypoint(OfflinePlayer player, String name, Location loc)
@@ -129,18 +144,28 @@ public class WaypointsController
         return getWaypoints(player).stream().anyMatch(waypoint -> waypoint.name().equalsIgnoreCase(name));
     }
 
-    public void setCompass(Player player, OfflinePlayer owner, String name)
+    public boolean setCompass(Player player, OfflinePlayer owner, String name)
     {
         if (exists(owner, name))
         {
             Optional<Waypoint> wpOptional = getWaypoint(owner, name);
-            wpOptional.ifPresent(waypoint -> setCompass(player, waypoint));
+            if (wpOptional.isEmpty())
+            {
+                return false;
+            }
+            return setCompass(player, wpOptional.get());
         }
+        return false;
     }
 
-    public void setCompass(Player player, Waypoint waypoint)
+    public boolean setCompass(Player player, Waypoint waypoint)
     {
+        if (!exists(player, waypoint.name()))
+        {
+            return false;
+        }
         player.setCompassTarget(waypoint.location());
+        return true;
     }
 
     public void resetCompass(Player player)
