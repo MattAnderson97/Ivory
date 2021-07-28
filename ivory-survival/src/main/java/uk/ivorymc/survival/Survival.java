@@ -43,7 +43,8 @@ public class Survival extends Module
     @Override
     protected void registerCommands()
     {
-        registry.registerCommands(new WaypointsCommand(this));
+        WaypointsCommand wpCommand = new WaypointsCommand(this);
+        registry.registerCommands(wpCommand);
     }
 
     @Override

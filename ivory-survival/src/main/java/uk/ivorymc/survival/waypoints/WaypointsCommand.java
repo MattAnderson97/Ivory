@@ -24,13 +24,98 @@ import java.util.stream.Collectors;
 
 public record WaypointsCommand(Survival survival) implements Command
 {
-    @CommandMethod("waypoints set <name>")
+    ///
+    /// COMMAND DEFINITIONS
+    ///
+
+    // set a waypoint
+    @CommandMethod("wpset <name>")
     @CommandDescription("Set a waypoint")
-    @ProxiedBy("wpset")
-    public void setWaypoint(
+    public void waypointsSetCmd(
         final @NonNull Player sender,
         final @NonNull @Argument("name") String name,
         @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    ) { setWaypoint(sender, name, target);}
+
+    // list waypoints
+    @CommandMethod("wplist [page]")
+    @CommandDescription("List waypoints")
+    @ProxiedBy("wpls")
+    public void waypointsListCmd(
+            final @NonNull CommandSender sender,
+            final @Argument(value = "page", defaultValue = "1") int page,
+            @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    ) { listWaypoints(sender, page, target);}
+
+    // delete a waypoint
+    @CommandMethod("wpdelete <waypoint>")
+    @CommandDescription("Delete a waypoint")
+    @ProxiedBy("wpdel")
+    public void waypointDeleteCmd(
+            final @NonNull CommandSender sender,
+            final @NonNull @Argument("waypoint") String waypoint,
+            @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    ) { deleteWaypoint(sender, waypoint, target); }
+
+    // generic waypoints command
+    @CommandMethod("wp <action> [argument]")
+    @CommandDescription("waypoints command")
+    @ProxiedBy("waypoint")
+    public void waypointCommand(
+        final @NonNull CommandSender sender,
+        final @NonNull @Argument("action") String action,
+        @Argument("argument") String argument,
+        @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    )
+    {
+        switch(action.toLowerCase())
+        {
+            case "set" -> {
+                if (!(sender instanceof Player))
+                {
+                    Message.error("This command is only executable by players", "").send(survival.audience(sender));
+                    return;
+                }
+                if (argument == null)
+                {
+                    Message.error("Please provide a waypoint name", "").send(survival.audience(sender));
+                    return;
+                }
+                setWaypoint((Player) sender, argument, target);
+            }
+            case "del", "delete" -> {
+                if (argument == null)
+                {
+                    Message.error("Please provide a waypoint name", "").send(survival.audience(sender));
+                    return;
+                }
+                deleteWaypoint(sender, argument, target);
+            }
+            case "ls", "list" -> {
+                if (argument == null)
+                {
+                    argument = "0";
+                }
+                try
+                {
+                    listWaypoints(sender, Integer.parseInt(argument), target);
+                }
+                catch(NumberFormatException e)
+                {
+                    Message.error("Please provide a valid page number", "").send(survival.audience(sender));
+                }
+            }
+        }
+    }
+
+    ///
+    /// COMMAND METHODS
+    ///
+
+    private void setWaypoint(
+        final @NonNull Player sender,
+        final @NonNull @Argument("name") String name,
+        @Nullable OfflinePlayer target
     )
     {
         // get the target to send the command to
@@ -84,13 +169,10 @@ public record WaypointsCommand(Survival survival) implements Command
         }
     }
 
-    @CommandMethod("waypoints list [page]")
-    @CommandDescription("List waypoints")
-    @ProxiedBy("wpls")
-    public void listWaypoints(
+    private void listWaypoints(
         final @NonNull CommandSender sender,
         final @Argument(value = "page", defaultValue = "1") int page,
-        @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+        @Nullable OfflinePlayer target
     )
     {
         // get the target to send the command to
@@ -121,13 +203,10 @@ public record WaypointsCommand(Survival survival) implements Command
         sendWaypoints(lines, page, survival.audience(sender));
     }
 
-    @CommandMethod("waypoints delete <waypoint>")
-    @CommandDescription("Delete a waypoint")
-    @ProxiedBy("wpdel")
-    public void deleteWaypoint(
+    private void deleteWaypoint(
         final @NonNull CommandSender sender,
         final @NonNull @Argument("waypoint") String waypoint,
-        @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+        @Nullable OfflinePlayer target
     )
     {
         Optional<OfflinePlayer> targetOptional = getTarget(sender, target);
