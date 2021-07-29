@@ -1,6 +1,8 @@
 package uk.ivorymc.survival;
 
 import uk.ivorymc.api.Module;
+import uk.ivorymc.survival.extensions.CustomRecipes;
+import uk.ivorymc.survival.listeners.BlockBreakListener;
 import uk.ivorymc.survival.listeners.JoinListener;
 import uk.ivorymc.survival.listeners.QuitListener;
 import uk.ivorymc.survival.waypoints.WaypointsCommand;
@@ -30,6 +32,9 @@ public class Survival extends Module
 
         // create waypoints controller instance
         waypointsController = new WaypointsController(this);
+
+        // register recipes
+        new CustomRecipes(this);
     }
 
     @Override
@@ -50,6 +55,7 @@ public class Survival extends Module
     @Override
     protected void registerEvents()
     {
+        registry.registerEvents(new BlockBreakListener(this));
         registry.registerEvents(new JoinListener(this));
         registry.registerEvents(new QuitListener(this));
     }

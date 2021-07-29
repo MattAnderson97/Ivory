@@ -7,6 +7,8 @@ import cloud.commandframework.annotations.Flag;
 import cloud.commandframework.annotations.ProxiedBy;
 import community.leaf.textchain.adventure.TextChain;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -42,9 +44,9 @@ public record WaypointsCommand(Survival survival) implements Command
     @CommandDescription("List waypoints")
     @ProxiedBy("wpls")
     public void waypointsListCmd(
-            final @NonNull CommandSender sender,
-            final @Argument(value = "page", defaultValue = "1") int page,
-            @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+        final @NonNull CommandSender sender,
+        final @Argument(value = "page", defaultValue = "1") int page,
+        @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
     ) { listWaypoints(sender, page, target);}
 
     // delete a waypoint
@@ -52,10 +54,20 @@ public record WaypointsCommand(Survival survival) implements Command
     @CommandDescription("Delete a waypoint")
     @ProxiedBy("wpdel")
     public void waypointDeleteCmd(
-            final @NonNull CommandSender sender,
-            final @NonNull @Argument("waypoint") String waypoint,
-            @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+        final @NonNull CommandSender sender,
+        final @NonNull @Argument("waypoint") String waypoint,
+        @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
     ) { deleteWaypoint(sender, waypoint, target); }
+
+    // teleport to a waypoint
+    @CommandMethod("wpteleport <waypoint>")
+    @CommandDescription("Teleport to a waypoint")
+    @ProxiedBy("wptp")
+    public void waypointTeleportCmd(
+        final @NonNull CommandSender sender,
+        final @NonNull @Argument("waypoint") String waypoint,
+        @Nullable @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    ){ teleport(sender, waypoint, target); }
 
     // generic waypoints command
     @CommandMethod("wp <action> [argument]")
@@ -104,6 +116,14 @@ public record WaypointsCommand(Survival survival) implements Command
                 {
                     Message.error("Please provide a valid page number", "").send(survival.audience(sender));
                 }
+            }
+            case "tp", "teleport" -> {
+                if (argument == null)
+                {
+                    Message.error("Please provide a waypoint name", "").send(survival.audience(sender));
+                    return;
+                }
+                teleport(sender, argument, target);
             }
         }
     }
@@ -272,5 +292,30 @@ public record WaypointsCommand(Survival survival) implements Command
             // send lines from the specified page
             pages.get(page - 1).forEach(line -> line.send(audience));
         }
+    }
+
+    private void teleport(CommandSender sender, String waypointName, OfflinePlayer target)
+    {
+        if (sender instanceof ConsoleCommandSender)
+        {
+            Message.error("This command is only executable by players", "").send(survival.audience(sender));
+            return;
+        }
+        Player player = (Player) sender;
+        Optional<Waypoint> wpOptional = survival.getWaypointsController().getWaypoint(target, waypointName);
+        if (wpOptional.isEmpty())
+        {
+            Message.error("Unknown waypoint: ", waypointName);
+            return;
+        }
+        player.teleport(wpOptional.get().location());
+        TextChain.chain()
+            .then("Whoosh!")
+                .color(TextColor.color(0x018786))
+            .then(" Teleported to waypoint ")
+                .color(NamedTextColor.WHITE)
+            .then(waypointName)
+                .color(TextColor.color(0x03DAC6))
+            .send(survival.audience(player));
     }
 }
