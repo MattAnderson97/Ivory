@@ -35,12 +35,21 @@ public record ChatListener(IvoryBungee plugin) implements Listener
 
         event.setCancelled(true);
 
-        BungeePlayerData playerData = plugin.getPlayerData(player);
         String originalMessage = event.getMessage();
         TextChain formattedMessage = format(player, originalMessage);
 
         Server currentServer = player.getServer();
         String serverName = currentServer.getInfo().getName();
+        String[] joindate = {""};
+        plugin.getSqlController().sql().query(
+            "SELECT join_date FROM player WHERE uuid=?",
+                (Object) SQL.uuidToBytes(player.getUniqueId())
+        ).select().complete(resultSet -> {
+            if (resultSet.next())
+            {
+                joindate[0] = resultSet.getString("join_date");
+            }
+        });
         TextChain chatMessage = TextChain.chain()
             .then(getPrefix(player))
             .then(" ")
@@ -61,7 +70,7 @@ public record ChatListener(IvoryBungee plugin) implements Listener
                 .nextLine()
                 .then("Join date: ")
                     .color(TextColor.color(0x03DAC6))
-                .then(playerData.getConfig().getString("join-date"))
+                .then(joindate[0])
                     .color(NamedTextColor.WHITE)
             )
             .then(" >")
@@ -112,14 +121,38 @@ public record ChatListener(IvoryBungee plugin) implements Listener
             String word = words[i];
             if (word.length() > 1)
             {
-                switch (word.charAt(0))
+                if (Message.isUrl(word))
                 {
-                    case '#' -> formattedMessage.then(Message.tag(word));
-                    case '@' -> formattedMessage.then(Message.ping(word, true, Optional.of(plugin)));
-                    default -> formattedMessage.then(word)
-                        .color(NamedTextColor.WHITE)
-                        .tooltip("Click to send a message")
-                        .suggest("/msg " + player.getName() + " ");
+                    formattedMessage.then(Message.url(word));
+                }
+                else
+                {
+                    switch (word.charAt(0))
+                    {
+                        case '#' -> {
+                            final int[] count = {0};
+                            plugin.getSqlController().sql()
+                                .query(
+                                    "INSERT INTO hashtags (tag, count) VALUES(?, ?) ON DUPLICATE KEY UPDATE count=count+1",
+                                    word, 1
+                                ).complete();
+                            plugin.getSqlController().sql()
+                                .query("SELECT count FROM hashtags WHERE tag=?", word).select().complete(
+                                      resultSet -> {
+                                          if (resultSet.next())
+                                          {
+                                              count[0] += resultSet.getInt("count");
+                                          }
+                                      }
+                                );
+                            formattedMessage.then(Message.tag(word, count[0]));
+                        }
+                        case '@' -> formattedMessage.then(Message.ping(word, true, Optional.of(plugin)));
+                        default -> formattedMessage.then(word)
+                                .color(NamedTextColor.WHITE)
+                                .tooltip("Click to send a message")
+                                .suggest("/msg " + player.getName() + " ");
+                    }
                 }
             }
             else

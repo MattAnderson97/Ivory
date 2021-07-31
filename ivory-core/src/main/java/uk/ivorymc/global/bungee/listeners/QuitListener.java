@@ -13,6 +13,5 @@ public record QuitListener(IvoryBungee plugin) implements Listener
     {
         ProxiedPlayer player = event.getPlayer();
         plugin.removeReply(player);
-        plugin.getPlayerData(player).saveAsync();
     }
 }

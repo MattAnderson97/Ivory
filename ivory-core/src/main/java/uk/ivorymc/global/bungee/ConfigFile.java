@@ -1,10 +1,10 @@
 package uk.ivorymc.global.bungee;
 
-import uk.ivorymc.api.storage.YamlFile;
+import uk.ivorymc.api.storage.BungeeYamlFile;
 
 import java.nio.file.Path;
 
-public class ConfigFile extends YamlFile
+public class ConfigFile extends BungeeYamlFile
 {
     private final IvoryBungee plugin;
 

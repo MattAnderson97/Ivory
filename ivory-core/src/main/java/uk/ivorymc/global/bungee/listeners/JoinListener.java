@@ -52,6 +52,5 @@ public record JoinListener(IvoryBungee plugin) implements Listener
                 }
             }), 1000, TimeUnit.MILLISECONDS
         );
-        //plugin.getMailHandler().readMail(player);
     }
 }

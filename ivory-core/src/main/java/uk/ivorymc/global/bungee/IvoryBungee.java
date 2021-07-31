@@ -4,21 +4,19 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import community.leaf.textchain.bungeecord.BungeeTextChainSource;
 import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
-import net.luckperms.api.LuckPerms;
-import net.luckperms.api.LuckPermsProvider;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import pl.tlinkowski.annotation.basic.NullOr;
-import uk.ivorymc.api.playerdata.BungeePlayerData;
 import uk.ivorymc.api.storage.SQLController;
 import uk.ivorymc.global.bungee.commands.ListCommand;
 import uk.ivorymc.global.bungee.commands.LogCommand;
 import uk.ivorymc.global.bungee.commands.chat.MailCommand;
 import uk.ivorymc.global.bungee.commands.chat.MsgCommand;
 import uk.ivorymc.global.bungee.commands.chat.ReplyCommand;
+import uk.ivorymc.global.bungee.commands.chat.TrendingCommand;
 import uk.ivorymc.global.bungee.listeners.ChatListener;
 import uk.ivorymc.global.bungee.listeners.CommandListener;
 import uk.ivorymc.global.bungee.listeners.JoinListener;
@@ -38,7 +36,6 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     private SQLController sqlController;
     private MailHandler mailHandler;
 
-    private Map<String, BungeePlayerData> playerDataMap;
     private Map<String, String> replyMap;
 
     @Override
@@ -70,8 +67,6 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
 
         // prepare other vars
 
-        // player data
-        playerDataMap = new HashMap<>();
         // replies
         replyMap = new HashMap<>();
 
@@ -107,6 +102,14 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
             "play_time LONG NOT NULL DEFAULT 0",
             "donor BOOLEAN DEFAULT FALSE",
             "PRIMARY KEY (uuid)"
+        );
+        // create hashtags table
+        sqlController.createTable(
+            "hashtags",
+            "id INT NOT NULL AUTO_INCREMENT",
+            "tag VARCHAR(50) NOT NULL UNIQUE",
+            "count int NOT NULL DEFAULT 1",
+            "PRIMARY KEY (id)"
         );
         // create chat log table
         sqlController.createTable(
@@ -151,6 +154,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
         register(new MailCommand(this));
         register(new MsgCommand(this));
         register(new ReplyCommand(this));
+        register(new TrendingCommand(this));
     }
 
     private void register(Object object)
@@ -171,16 +175,6 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     }
 
     public SQLController getSqlController() { return sqlController; }
-
-    public BungeePlayerData getPlayerData(ProxiedPlayer player)
-    {
-        String UUID = player.getUniqueId().toString();
-        if (!playerDataMap.containsKey(UUID))
-        {
-            playerDataMap.put(UUID, new BungeePlayerData(Path.of(getDataFolder().getAbsolutePath(), "playerdata"), player, this));
-        }
-        return playerDataMap.get(UUID);
-    }
 
     public void removeReply(ProxiedPlayer player)
     {

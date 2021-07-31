@@ -136,59 +136,7 @@ public class LogCommand extends Command
             // send page
             page.forEach(line -> line.send(plugin.adventure().sender(sender)));
             // send footer
-            TextChain pre = TextChain.chain(), post = TextChain.chain();
-            // footer prefix
-            if (pageNo > 1)
-            {
-                pre.then("<<")
-                        .bold()
-                        .color(TextColor.color(0x018786))
-                        .suggest("/log " + logType + " " + targetName + " 1")
-                    .then(" ")
-                    .then("<")
-                        .bold()
-                        .color(TextColor.color(0x03DAC6))
-                        .suggest("/log " + logType + " " + targetName + " " + (pageNo - 1))
-                    .then(" ");
-            }
-            else
-            {
-                pre.then("<< < ").bold().color(NamedTextColor.DARK_GRAY);
-            }
-            // footer suffix
-            if (pageNo < pages.size())
-            {
-                post.then(" ")
-                    .then(">")
-                        .bold()
-                        .color(TextColor.color(0x03DAC6))
-                        .suggest("/log " + logType + " " + targetName + " " + (pageNo + 1))
-                    .then(" ")
-                    .then(">>")
-                        .bold()
-                        .color(TextColor.color(0x018786))
-                        .suggest("/log " + logType + " " + targetName + " " + pages.size());
-            }
-            else
-            {
-                post.then(" > >>").bold().color(NamedTextColor.DARK_GRAY);
-            }
-
-            TextChain.chain()
-                .then(pre)
-                .then("(")
-                    .unformatted()
-                    .color(NamedTextColor.WHITE)
-                .then(String.valueOf(pageNo))
-                    .color(TextColor.color(0x03DAC6))
-                .then("/")
-                    .color(NamedTextColor.WHITE)
-                .then(String.valueOf(pages.size()))
-                    .color(TextColor.color(0x03DAC6))
-                .then(")")
-                    .color(NamedTextColor.WHITE)
-                .then(post)
-                .send(plugin.adventure().sender(sender));
+            Message.getPagesFooter(pageNo, pages.size(), "/log " + logType).send(plugin.adventure().sender(sender));
         }
     }
 
