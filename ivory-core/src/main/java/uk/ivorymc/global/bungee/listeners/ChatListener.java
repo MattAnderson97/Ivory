@@ -13,7 +13,7 @@ import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
-import uk.ivorymc.api.playerdata.BungeePlayerData;
+import uk.ivorymc.api.MessageType;
 import uk.ivorymc.api.utils.Message;
 import uk.ivorymc.global.bungee.IvoryBungee;
 import uk.ivorymc.global.bungee.events.PlayerCommandEvent;
@@ -40,47 +40,45 @@ public record ChatListener(IvoryBungee plugin) implements Listener
 
         Server currentServer = player.getServer();
         String serverName = currentServer.getInfo().getName();
-        String[] joindate = {""};
+        String[] joinDate = {""};
         plugin.getSqlController().sql().query(
             "SELECT join_date FROM player WHERE uuid=?",
                 (Object) SQL.uuidToBytes(player.getUniqueId())
         ).select().complete(resultSet -> {
             if (resultSet.next())
             {
-                joindate[0] = resultSet.getString("join_date");
+                joinDate[0] = resultSet.getString("join_date");
             }
         });
-        TextChain chatMessage = TextChain.chain()
-            .then(getPrefix(player))
-            .then(" ")
-            .then(player.getDisplayName())
-                .color(NamedTextColor.GRAY)
-            .tooltip(tooltip -> tooltip
-                .then(player.getName())
-                .nextLine()
-                .then(" ")
-                .then("     ")
-                    .color(TextColor.color(0x03DAC6))
-                    .strikethrough()
-                .nextLine()
-                .then("Server: ")
-                    .color(TextColor.color(0x03DAC6))
-                .then(serverName)
-                    .color(NamedTextColor.WHITE)
-                .nextLine()
-                .then("Join date: ")
-                    .color(TextColor.color(0x03DAC6))
-                .then(joindate[0])
-                    .color(NamedTextColor.WHITE)
-            )
-            .then(" >")
-                .color(TextColor.color(0x018786))
-            .then("> ")
-                .color(TextColor.color(0x03DAC6))
-            .then(formattedMessage);
 
         plugin.getProxy().getPlayers().forEach(
-            loopPlayer -> chatMessage.send(plugin.adventure().player(loopPlayer))
+            loopPlayer -> plugin.getPlayer(loopPlayer).ifPresent(
+                proxiedPlayer -> {
+                    TextChain pre;
+                    Optional<ProxiedPlayer> lastSender = proxiedPlayer.getLastSender();
+                    if (lastSender.isPresent())
+                    {
+                        if (lastSender.get().equals(player) && proxiedPlayer.getLastMessageType() == MessageType.GLOBAL)
+                        {
+                            pre = getShortPre(player, joinDate[0], serverName);
+                        }
+                        else
+                        {
+                            pre = getFullPre(player, joinDate[0], serverName);
+                        }
+                    }
+                    else
+                    {
+                        pre = getFullPre(player, joinDate[0], serverName);
+                    }
+
+                    TextChain chatMessage = TextChain.chain()
+                        .then(pre)
+                        .then(formattedMessage);
+
+                    proxiedPlayer.sendMessage(chatMessage, player, MessageType.GLOBAL);
+                }
+            )
         );
 
         // write to chat logs
@@ -89,6 +87,51 @@ public record ChatListener(IvoryBungee plugin) implements Listener
             originalMessage,
             SQL.uuidToBytes(player.getUniqueId())
         ).queue();
+    }
+
+    private TextChain getFullPre(ProxiedPlayer player, String joinDate, String serverName)
+    {
+        return TextChain.chain()
+            .then(getPrefix(player))
+            .then(" ")
+            .then(player.getDisplayName())
+            .color(NamedTextColor.GRAY)
+            .tooltip(getToolTip(player, joinDate, serverName))
+            .then(" >")
+                .color(TextColor.color(0x018786))
+            .then("> ")
+                .color(TextColor.color(0x03DAC6));
+    }
+
+    private TextChain getShortPre(ProxiedPlayer player, String joinDate, String serverName)
+    {
+        return TextChain.chain()
+            .then(" >")
+                .color(TextColor.color(0x018786))
+            .then("> ")
+                .color(TextColor.color(0x03DAC6))
+            .tooltip(getToolTip(player, joinDate, serverName));
+    }
+
+    private TextChain getToolTip(ProxiedPlayer player, String joinDate, String serverName)
+    {
+        return TextChain.chain()
+            .then(player.getName())
+            .nextLine()
+            .then(" ")
+            .then("     ")
+                .color(TextColor.color(0x03DAC6))
+                .strikethrough()
+            .nextLine()
+            .then("Server: ")
+                .color(TextColor.color(0x03DAC6))
+            .then(serverName)
+                .color(NamedTextColor.WHITE)
+            .nextLine()
+            .then("Join date: ")
+                .color(TextColor.color(0x03DAC6))
+            .then(joinDate)
+                .color(NamedTextColor.WHITE);
     }
 
     private String getPrefix(ProxiedPlayer player)

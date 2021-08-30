@@ -81,7 +81,7 @@
         <dependency>
             <groupId>community.leaf.textchain</groupId>
             <artifactId>textchain-adventure</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>575b99713c</version>
         </dependency>
         <!--
         TextChain Bungeecord
@@ -89,7 +89,7 @@
         <dependency>
             <groupId>community.leaf.textchain</groupId>
             <artifactId>textchain-bungeecord</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>575b99713c</version>
         </dependency>
         <!--
         Leafy tasks
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>community.leaf.tasks</groupId>
             <artifactId>tasks-bukkit</artifactId>
-            <version>6919ad9a29</version>
+            <version>0.0.1</version>
         </dependency>
         <!--
         eli sql wrapper

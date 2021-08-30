@@ -10,6 +10,7 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import pl.tlinkowski.annotation.basic.NullOr;
+import uk.ivorymc.api.IvoryProxiedPlayer;
 import uk.ivorymc.api.storage.SQLController;
 import uk.ivorymc.global.bungee.commands.ListCommand;
 import uk.ivorymc.global.bungee.commands.LogCommand;
@@ -37,6 +38,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     private MailHandler mailHandler;
 
     private Map<String, String> replyMap;
+    private Map<String, IvoryProxiedPlayer> playerMap;
 
     @Override
     public void onEnable()
@@ -69,6 +71,7 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
 
         // replies
         replyMap = new HashMap<>();
+        playerMap = new HashMap<>();
 
         register();
     }
@@ -81,6 +84,10 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
             this.audiences.close();
             this.audiences = null;
         }
+        // clear player map
+        getProxy().getPlayers().forEach(this::removePlayer);
+        // clear reply map
+        getProxy().getPlayers().forEach(this::removeReply);
     }
 
     @Override
@@ -175,6 +182,25 @@ public class IvoryBungee extends Plugin implements BungeeTextChainSource
     }
 
     public SQLController getSqlController() { return sqlController; }
+
+    public void addPlayer(ProxiedPlayer player)
+    {
+        if (!playerMap.containsKey(player.getUniqueId().toString()))
+        {
+            playerMap.put(player.getUniqueId().toString(), new IvoryProxiedPlayer(this, player));
+        }
+    }
+
+    public Optional<IvoryProxiedPlayer> getPlayer(ProxiedPlayer player)
+    {
+        if (playerMap.containsKey(player.getUniqueId().toString()))
+        {
+            return Optional.of(playerMap.get(player.getUniqueId().toString()));
+        }
+        return Optional.empty();
+    }
+
+    public void removePlayer(ProxiedPlayer player) { playerMap.remove(player.getUniqueId().toString()); }
 
     public void removeReply(ProxiedPlayer player)
     {

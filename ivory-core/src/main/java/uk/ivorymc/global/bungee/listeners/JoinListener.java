@@ -26,6 +26,8 @@ public record JoinListener(IvoryBungee plugin) implements Listener
             SQL.uuidToBytes(player.getUniqueId()),
             player.getName()
         ).queue();
+        // create player wrapper instance
+        plugin.addPlayer(player);
     }
 
     @EventHandler
@@ -44,11 +46,15 @@ public record JoinListener(IvoryBungee plugin) implements Listener
                 result.next();
                 if (result.getBoolean("exists"))
                 {
-                    // send prompt to player
-                    TextChain.chain()
-                        .then("You have unread messages. Read them with /mail read")
-                            .color(TextColor.color(0x03DAC6))
-                        .send(plugin.adventure().sender(player));
+                    // get player wrapper
+                    plugin.getPlayer(player).ifPresent(
+                        // send prompt to player
+                        proxiedPlayer -> proxiedPlayer.sendMessage(
+                            TextChain.chain()
+                                .then("You have unread messages. Read them with /mail read")
+                                    .color(TextColor.color(0x03DAC6))
+                        )
+                    );
                 }
             }), 1000, TimeUnit.MILLISECONDS
         );
